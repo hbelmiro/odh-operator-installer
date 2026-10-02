@@ -1,0 +1,52 @@
+apiVersion: datasciencecluster.opendatahub.io/v2
+kind: DataScienceCluster
+metadata:
+  name: default-dsc
+spec:
+  components:
+    dashboard:
+      managementState: Managed
+      maasConsumerPortal:
+        managementState: Removed
+    workbenches:
+      managementState: Managed
+      workbenchesV2:
+        managementState: Removed
+    aipipelines:
+      managementState: Managed
+    kserve:
+      managementState: Removed
+      nim:
+        managementState: Removed
+      wva:
+        managementState: Removed
+    kueue:
+      managementState: Removed
+    ray:
+      managementState: Removed
+    trustyai:
+      managementState: Removed
+    modelregistry:
+      managementState: Managed
+    trainingoperator:
+      managementState: Removed
+    feastoperator:
+      managementState: Removed
+    llamastackoperator:
+      managementState: Removed
+    ogx:
+      managementState: Removed
+    mlflowoperator:
+      managementState: Removed
+    trainer:
+      managementState: Removed
+    sparkoperator:
+      managementState: Removed
+    aigateway:
+      managementState: Removed
+      modelsAsAService:
+        managementState: Removed
+      batchGateway:
+        managementState: Removed
+    mcplifecycleoperator:
+      managementState: Removed
