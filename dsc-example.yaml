@@ -13,7 +13,7 @@ spec:
       workbenchesV2:
         managementState: Removed
     aipipelines:
-      managementState: Managed
+      managementState: Removed
     kserve:
       managementState: Removed
       nim:
