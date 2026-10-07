@@ -87,7 +87,7 @@ make -C "$source_dir" prepare yq \
 work_dir=$(mktemp -d "${TMPDIR:-/tmp}/odh-uninstall.XXXXXX")
 trap 'rm -rf "$work_dir"' EXIT
 "$source_dir/bin/kustomize" build "$source_dir/config/default" > "$work_dir/deployment.yaml"
-"$source_dir/bin/yq" 'select(.kind != "CustomResourceDefinition" and .kind != "Namespace")' \
+"$source_dir/bin/yq" eval 'select(.kind != "CustomResourceDefinition" and .kind != "Namespace")' \
   "$work_dir/deployment.yaml" > "$work_dir/operator.yaml"
 
 # Inventory namespaces before deleting the CRs that record their configuration.
