@@ -115,12 +115,12 @@ fi
 printf 'Installation complete. Operator and requested configuration are ready.\n'
 
 dashboard_info=$(kubectl get datascienceclusters.datasciencecluster.opendatahub.io \
-  -o jsonpath='{range .items[*]}{.spec.components.dashboard.managementState}{"\t"}{.status.components.dashboard.url}{"\n"}{end}' \
+  -o jsonpath='{range .items[*]}{.spec.components.dashboard.standard.managementState}{"\t"}{.spec.components.dashboard.maasPortal.managementState}{"\t"}{.status.components.dashboard.url}{"\n"}{end}' \
   --request-timeout=30s)
-IFS=$'\t' read -r dashboard_state dashboard_url <<< "$dashboard_info"
+IFS=$'\t' read -r dashboard_standard dashboard_maas dashboard_url <<< "$dashboard_info"
 
-case "$dashboard_state" in
-  Managed|Unmanaged)
+case "$dashboard_standard $dashboard_maas" in
+  *Managed*|*Unmanaged*)
     if [[ -z $dashboard_url ]]; then
       gateway_domain=$(kubectl get gatewayconfigs.services.platform.opendatahub.io \
         -o jsonpath='{.items[0].status.domain}' --request-timeout=30s)
