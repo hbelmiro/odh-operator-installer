@@ -159,6 +159,15 @@ while IFS= read -r namespace; do
     --wait=true --timeout=300s --request-timeout=30s
 done <<< "$namespaces"
 
+# Remove the install.sh dashboard RBAC workaround (cluster-scoped, not owned
+# by any ODH CRD, so it would otherwise survive the uninstall).
+kubectl delete clusterrolebinding odh-dashboard-monitoring-escalation --ignore-not-found=true \
+  --wait=true --timeout=300s --request-timeout=30s
+kubectl delete clusterrolebinding odh-dashboard-monitoring --ignore-not-found=true \
+  --wait=true --timeout=300s --request-timeout=30s
+kubectl delete clusterrole odh-dashboard-monitoring --ignore-not-found=true \
+  --wait=true --timeout=300s --request-timeout=30s
+
 kubectl delete -f "$work_dir/operator.yaml" -n opendatahub-operator-system \
   --ignore-not-found=true --wait=true --timeout=300s --request-timeout=30s
 while IFS= read -r resource; do

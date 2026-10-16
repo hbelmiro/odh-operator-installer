@@ -107,9 +107,71 @@ apply_and_wait() {
     --timeout=300s --request-timeout=30s
 }
 
+# Workaround for dashboard operator RBAC escalation bug: the dashboard operator
+# deploys ClusterRoleBinding odh-dashboard-monitoring, but its service account
+# does not hold the granted permissions, so Kubernetes rejects the escalation.
+# Pre-create the ClusterRole (the operator's rules) and a SEPARATE binding
+# granting the dashboard-operator service account those permissions. A separate
+# name matters: the operator rewrites the subject of its own
+# odh-dashboard-monitoring binding, so a grant placed there is lost on the next
+# reconcile and the escalation error returns. Idempotent; safe when present.
 apply_and_wait "$dsci_file" dscinitialization
+if kubectl get namespace opendatahub >/dev/null 2>&1 --request-timeout=30s; then
+  kubectl apply -f - --request-timeout=30s <<'EOF'
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: odh-dashboard-monitoring
+rules:
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["prometheuses/api"]
+  resourceNames: ["k8s"]
+  verbs: ["get", "create", "update"]
+EOF
+  kubectl get clusterrolebinding odh-dashboard-monitoring-escalation >/dev/null 2>&1 --request-timeout=30s ||
+    kubectl create clusterrolebinding odh-dashboard-monitoring-escalation \
+      --clusterrole=cluster-monitoring-view \
+      --serviceaccount=opendatahub:dashboard-operator --request-timeout=30s
+fi
+
+# The dashboard operator reconciles with exponential backoff. When its first
+# attempts fail (for example on the odh-dashboard-monitoring RBAC escalation
+# worked around above), the pre-created RBAC is in place but the operator may
+# not retry for several minutes. Poll the DSC and, while it reports that
+# specific dashboard failure, poke the Dashboard CR to force an immediate
+# reconcile. Bounded to 5 pokes, then fall through to the plain wait.
+wait_dsc_with_dashboard_pokes() {
+  local manifest=$1
+  local deadline=$((SECONDS + 60))
+  local pokes=0 message
+
+  kubectl apply -f "$manifest" --request-timeout=30s
+  printf 'Applied: datasciencecluster/default-dsc\n'
+
+  while ((SECONDS < deadline)); do
+    if kubectl wait --for=jsonpath='{.status.phase}'=Ready \
+      datasciencecluster/default-dsc --timeout=5s --request-timeout=30s \
+      >/dev/null 2>&1; then
+      return 0
+    fi
+    message=$(kubectl get dsc default-dsc \
+      -o jsonpath='{.status.conditions[?(@.type=="DashboardReady")].message}' \
+      --request-timeout=30s)
+    if [[ $message == *odh-dashboard-monitoring*forbidden* && $pokes -lt 5 ]]; then
+      ((pokes++))
+      printf 'Dashboard operator stuck on RBAC backoff; forcing reconcile (poke %d/5)\n' "$pokes"
+      kubectl -n opendatahub patch dashboard default-dashboard --type=merge \
+        -p "{\"metadata\":{\"annotations\":{\"odh-operator-installer/force\":\"$pokes-$RANDOM\"}}}" \
+        --request-timeout=30s >/dev/null 2>&1 || true
+    fi
+  done
+
+  kubectl wait --for=jsonpath='{.status.phase}'=Ready \
+    datasciencecluster/default-dsc --timeout=240s --request-timeout=30s
+}
+
 if [[ -n $dsc_file ]]; then
-  apply_and_wait "$dsc_file" datasciencecluster
+  wait_dsc_with_dashboard_pokes "$dsc_file"
 fi
 
 printf 'Installation complete. Operator and requested configuration are ready.\n'
