@@ -1,4 +1,4 @@
-apiVersion: datasciencecluster.opendatahub.io/v2
+apiVersion: datasciencecluster.opendatahub.io/v3
 kind: DataScienceCluster
 metadata:
   name: default-dsc
@@ -18,16 +18,15 @@ spec:
       managementState: Removed
       nim:
         managementState: Removed
-      wva:
-        managementState: Removed
     kueue:
       managementState: Removed
     ray:
       managementState: Removed
     trustyai:
       managementState: Removed
-    modelregistry:
+    aiHub:
       managementState: Managed
+      instancesNamespace: odh-model-registries
     trainingoperator:
       managementState: Removed
     feastoperator:
