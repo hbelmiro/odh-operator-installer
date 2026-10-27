@@ -5,8 +5,9 @@ metadata:
 spec:
   components:
     dashboard:
-      managementState: Managed
-      maasConsumerPortal:
+      standard:
+        managementState: Managed
+      maasPortal:
         managementState: Removed
     workbenches:
       managementState: Managed
@@ -27,12 +28,6 @@ spec:
     aiHub:
       managementState: Managed
       instancesNamespace: odh-model-registries
-    trainingoperator:
-      managementState: Removed
-    feastoperator:
-      managementState: Removed
-    llamastackoperator:
-      managementState: Removed
     ogx:
       managementState: Removed
     mlflowoperator:
